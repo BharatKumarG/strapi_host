@@ -1,26 +1,7 @@
-# provider configuration
 provider "aws" {
   region = "us-east-1"
 }
 
-# Declare region as a variable
-variable "region" {
-  description = "AWS region"
-  default     = "us-east-1"
-}
-
-# Declare the Strapi image as a variable
-variable "strapi_image" {
-  default = "118273046134.dkr.ecr.us-east-1.amazonaws.com/gbk-strapi-app:latest"
-}
-
-# CloudWatch Log Group for ECS
-resource "aws_cloudwatch_log_group" "strapi" {
-  name              = "/ecs/strapi"
-  retention_in_days = 7
-}
-
-# Create VPC for Strapi
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -31,28 +12,36 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Create Public Subnet
-resource "aws_subnet" "public" {
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "strapi-gw"
+  }
+}
+
+resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "strapi-public-subnet"
+    Name = "public-subnet-a"
   }
 }
 
-# Create Internet Gateway
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.main.id
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
 
   tags = {
-    Name = "strapi-gateway"
+    Name = "public-subnet-b"
   }
 }
 
-# Create Route Table for Public Subnet
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -62,28 +51,24 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "strapi-public-rt"
+    Name = "public-rt"
   }
 }
 
-# Route Table Association for Public Subnet
 resource "aws_route_table_association" "a" {
-  subnet_id      = aws_subnet.public.id
+  subnet_id      = aws_subnet.public_a.id
   route_table_id = aws_route_table.public.id
 }
 
-# Create Security Group for Strapi
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
 resource "aws_security_group" "strapi_sg" {
   name        = "strapi-sg"
-  description = "Allow 1337 and HTTP access"
+  description = "Allow HTTP and ECS traffic"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 1337
-    to_port     = 1337
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
     from_port   = 80
@@ -98,85 +83,39 @@ resource "aws_security_group" "strapi_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  tags = {
-    Name = "strapi-sg"
-  }
 }
 
-# ECS Cluster for Strapi
-resource "aws_ecs_cluster" "strapi" {
-  name = "strapi-cluster"
-}
-
-# ECS Task Definition
-resource "aws_ecs_task_definition" "strapi" {
-  family                   = "strapi-task"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1"
-  task_role_arn            = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1"
-
-  container_definitions = jsonencode([{
-    name      = "strapi",
-    image     = var.strapi_image,
-    portMappings = [{
-      containerPort = 1337,
-      protocol      = "tcp"
-    }],
-    logConfiguration = {
-      logDriver = "awslogs",
-      options = {
-        awslogs-group         = "/ecs/strapi",
-        awslogs-region        = var.region,
-        awslogs-stream-prefix = "ecs"
-      }
-    }
-  }])
-}
-
-# Application Load Balancer
 resource "aws_lb" "strapi" {
   name               = "strapi-lb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.strapi_sg.id]
-  subnets            = [aws_subnet.public.id]
+  subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
 
   tags = {
-    Name = "strapi-lb"
+    Name = "strapi-alb"
   }
 }
 
-# Target Group
 resource "aws_lb_target_group" "strapi" {
-  name        = "strapi-tg"
-  port        = 1337
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = aws_vpc.main.id
+  name     = "strapi-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
 
   health_check {
     path                = "/"
-    protocol            = "HTTP"
-    matcher             = "200"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
-  }
-
-  tags = {
-    Name = "strapi-tg"
+    matcher             = "200"
   }
 }
 
-# Listener for Load Balancer
-resource "aws_lb_listener" "strapi" {
+resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.strapi.arn
-  port              = 80
+  port              = "80"
   protocol          = "HTTP"
 
   default_action {
@@ -185,31 +124,66 @@ resource "aws_lb_listener" "strapi" {
   }
 }
 
-# ECS Service for Strapi
+resource "aws_ecs_cluster" "strapi" {
+  name = "strapi-cluster"
+}
+
+resource "aws_cloudwatch_log_group" "strapi" {
+  name = "/ecs/strapi"
+}
+
+resource "aws_ecs_task_definition" "strapi" {
+  family                   = "strapi-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+
+  container_definitions = jsonencode([
+    {
+      name      = "strapi"
+      image     = "strapi/strapi"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.strapi.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+}
+
 resource "aws_ecs_service" "strapi" {
   name            = "strapi-service"
   cluster         = aws_ecs_cluster.strapi.id
   task_definition = aws_ecs_task_definition.strapi.arn
-  desired_count   = 1
   launch_type     = "FARGATE"
+  desired_count   = 1
 
   network_configuration {
-    subnets          = [aws_subnet.public.id]
-    security_groups  = [aws_security_group.strapi_sg.id]
+    subnets         = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     assign_public_ip = true
+    security_groups  = [aws_security_group.strapi_sg.id]
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.strapi.arn
     container_name   = "strapi"
-    container_port   = 1337
+    container_port   = 80
   }
 
-  depends_on = [aws_lb_listener.strapi]
+  depends_on = [aws_lb_listener.front_end]
 }
 
-# Output the Strapi Load Balancer DNS name
 output "strapi_lb_dns" {
-  description = "Access your Strapi app via this Load Balancer URL"
-  value       = aws_lb.strapi.dns_name
+  value = aws_lb.strapi.dns_name
 }
