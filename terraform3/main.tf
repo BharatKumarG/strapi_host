@@ -137,6 +137,54 @@ resource "aws_ecs_task_definition" "strapi" {
   }])
 }
 
+# Application Load Balancer
+resource "aws_lb" "strapi" {
+  name               = "strapi-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.strapi_sg.id]
+  subnets            = [aws_subnet.public.id]
+
+  tags = {
+    Name = "strapi-lb"
+  }
+}
+
+# Target Group
+resource "aws_lb_target_group" "strapi" {
+  name        = "strapi-tg"
+  port        = 1337
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = aws_vpc.main.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+
+  tags = {
+    Name = "strapi-tg"
+  }
+}
+
+# Listener for Load Balancer
+resource "aws_lb_listener" "strapi" {
+  load_balancer_arn = aws_lb.strapi.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.strapi.arn
+  }
+}
+
 # ECS Service for Strapi
 resource "aws_ecs_service" "strapi" {
   name            = "strapi-service"
@@ -150,9 +198,18 @@ resource "aws_ecs_service" "strapi" {
     security_groups  = [aws_security_group.strapi_sg.id]
     assign_public_ip = true
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.strapi.arn
+    container_name   = "strapi"
+    container_port   = 1337
+  }
+
+  depends_on = [aws_lb_listener.strapi]
 }
 
-# Output the Strapi URL
-output "strapi_url" {
-  value = "http://${aws_ecs_service.strapi.name}.ecs.${var.region}.amazonaws.com:1337"
+# Output the Strapi Load Balancer DNS name
+output "strapi_lb_dns" {
+  description = "Access your Strapi app via this Load Balancer URL"
+  value       = aws_lb.strapi.dns_name
 }
