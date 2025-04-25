@@ -1,0 +1,57 @@
+name: Deploy Strapi on ECS with Terraform
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-strapi:
+    name: Deploy Strapi on ECS with Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Initialize Terraform
+        run: |
+          cd terraform2
+          terraform init
+
+      - name: Format Terraform Configuration
+        run: |
+          cd terraform2
+          terraform fmt -check
+
+      - name: Validate Terraform Configuration
+        run: |
+          cd terraform2
+          terraform validate
+
+      - name: Generate Terraform Plan
+        run: |
+          cd terraform2
+          terraform plan \
+            -var="image_uri=${{ secrets.ECR_REPOSITORY }}" \
+            -var="region=${{ secrets.AWS_REGION }}" \
+            -var="app_keys=${{ secrets.APP_KEYS }}" \
+            -var="api_token_salt=${{ secrets.API_TOKEN_SALT }}" \
+            -var="admin_jwt_secret=${{ secrets.ADMIN_JWT_SECRET }}" \
+            -var="transfer_token_salt=${{ secrets.TRANSFER_TOKEN_SALT }}" \
+            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -out=tfplan
+        id: plan
+
+      - name: Apply Terraform Configuration
+        run: |
+          cd terraform2
+          terraform apply -auto-approve
