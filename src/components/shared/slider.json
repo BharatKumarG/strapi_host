@@ -1,17 +1,3 @@
-{
-  "collectionName": "components_shared_sliders",
-  "info": {
-    "displayName": "Slider",
-    "icon": "address-book",
-    "description": ""
-  },
-  "options": {},
-  "attributes": {
-    "files": {
-      "type": "media",
-      "multiple": true,
-      "required": false,
-      "allowedTypes": ["images"]
-    }
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:b64fc6b639d993d6507484e7959f4ef50aec7a3c4646b6fff48ae5b11a2e79f2
+size 314

@@ -1,34 +1,3 @@
-{
-  "kind": "collectionType",
-  "collectionName": "authors",
-  "info": {
-    "singularName": "author",
-    "pluralName": "authors",
-    "displayName": "Author",
-    "description": "Create authors for your content"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "name": {
-      "type": "string"
-    },
-    "avatar": {
-      "type": "media",
-      "multiple": false,
-      "required": false,
-      "allowedTypes": ["images", "files", "videos"]
-    },
-    "email": {
-      "type": "string"
-    },
-    "articles": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::article.article",
-      "mappedBy": "author"
-    }
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:377a27e99e9340bcda80e94222110557bd08ff6f6c4b2b1eaafd096c8e7cb0ad
+size 700

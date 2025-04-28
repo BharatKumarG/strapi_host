@@ -1,31 +1,3 @@
-{
-  "kind": "collectionType",
-  "collectionName": "categories",
-  "info": {
-    "singularName": "category",
-    "pluralName": "categories",
-    "displayName": "Category",
-    "description": "Organize your content into categories"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "name": {
-      "type": "string"
-    },
-    "slug": {
-      "type": "uid"
-    },
-    "articles": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::article.article",
-      "mappedBy": "category"
-    },
-    "description": {
-      "type": "text"
-    }
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:cc30c777bc00b8de8850be2388fb659df795393aec065c0484f6d65e9dc1e997
+size 615

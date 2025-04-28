@@ -1,7 +1,3 @@
-export default ({ env }) => ({
-  host: env('HOST', '0.0.0.0'),
-  port: env.int('PORT', 1337),
-  app: {
-    keys: env.array('APP_KEYS'),
-  },
-});
+version https://git-lfs.github.com/spec/v1
+oid sha256:481d40bf5b283489055007544f056dfe55ec20be8b6ff3ff331b0e433142ed5c
+size 145

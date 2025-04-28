@@ -1,20 +1,3 @@
-// import type { Core } from '@strapi/strapi';
-
-export default {
-  /**
-   * An asynchronous register function that runs before
-   * your application is initialized.
-   *
-   * This gives you an opportunity to extend code.
-   */
-  register(/* { strapi }: { strapi: Core.Strapi } */) {},
-
-  /**
-   * An asynchronous bootstrap function that runs before
-   * your application gets started.
-   *
-   * This gives you an opportunity to set up your data model,
-   * run jobs, or perform some special logic.
-   */
-  bootstrap(/* { strapi }: { strapi: Core.Strapi } */) {},
-};
+version https://git-lfs.github.com/spec/v1
+oid sha256:945dffb5ca9aa73a91da1c8b2ca46163d8948c6034c1ed1fd917966df7553dec
+size 566

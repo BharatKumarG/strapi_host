@@ -1,17 +1,3 @@
-export default ({ env }) => ({
-  auth: {
-    secret: env('ADMIN_JWT_SECRET'),
-  },
-  apiToken: {
-    salt: env('API_TOKEN_SALT'),
-  },
-  transfer: {
-    token: {
-      salt: env('TRANSFER_TOKEN_SALT'),
-    },
-  },
-  flags: {
-    nps: env.bool('FLAG_NPS', true),
-    promoteEE: env.bool('FLAG_PROMOTE_EE', true),
-  },
-});
+version https://git-lfs.github.com/spec/v1
+oid sha256:7bb4071d6b9913440e1a530bafbb228ad471aa47d8d7b09512b606e1980a5f1d
+size 321

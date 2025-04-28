@@ -1,35 +1,3 @@
-{
-  "kind": "singleType",
-  "collectionName": "globals",
-  "info": {
-    "singularName": "global",
-    "pluralName": "globals",
-    "displayName": "Global",
-    "description": "Define global settings"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "siteName": {
-      "type": "string",
-      "required": true
-    },
-    "favicon": {
-      "type": "media",
-      "multiple": false,
-      "required": false,
-      "allowedTypes": ["images", "files", "videos"]
-    },
-    "siteDescription": {
-      "type": "text",
-      "required": true
-    },
-    "defaultSeo": {
-      "type": "component",
-      "repeatable": false,
-      "component": "shared.seo"
-    }
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:1951d2a6560548ea21b71fb98cabaf48732b9c790702b106d2676c81e0e36376
+size 712

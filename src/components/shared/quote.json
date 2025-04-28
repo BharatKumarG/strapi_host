@@ -1,16 +1,3 @@
-{
-  "collectionName": "components_shared_quotes",
-  "info": {
-    "displayName": "Quote",
-    "icon": "indent"
-  },
-  "options": {},
-  "attributes": {
-    "title": {
-      "type": "string"
-    },
-    "body": {
-      "type": "text"
-    }
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:4f8b68c24866904f609ad98de2aec0796cb6ba1f0e4c6e80fab99073d09903db
+size 243

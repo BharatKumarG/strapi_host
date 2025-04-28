@@ -1,14 +1,3 @@
-{
-  "collectionName": "components_shared_rich_texts",
-  "info": {
-    "displayName": "Rich text",
-    "icon": "align-justify",
-    "description": ""
-  },
-  "options": {},
-  "attributes": {
-    "body": {
-      "type": "richtext"
-    }
-  }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:f2a769cfcaf2d02bc8aa83583331b2d71c8e8791956c0812e283dbab0ac1955e
+size 240
