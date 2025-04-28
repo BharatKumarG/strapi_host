@@ -98,10 +98,11 @@ resource "aws_lb" "strapi" {
 }
 
 resource "aws_lb_target_group" "strapi" {
-  name     = "strapi-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  name        = "strapi-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip" # <-- IMPORTANT FIX
 
   health_check {
     path                = "/"
@@ -138,28 +139,25 @@ resource "aws_ecs_task_definition" "strapi" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1" 
-  container_definitions = jsonencode([
-    {
-      name      = "strapi"
-      image     = "strapi/strapi"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 80
-          hostPort      = 80
-        }
-      ],
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.strapi.name
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "ecs"
-        }
+  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1"
+  
+  container_definitions = jsonencode([{
+    name      = "strapi"
+    image     = "strapi/strapi"
+    essential = true
+    portMappings = [{
+      containerPort = 80
+      hostPort      = 80
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.strapi.name
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "ecs"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_service" "strapi" {
@@ -170,7 +168,7 @@ resource "aws_ecs_service" "strapi" {
   desired_count   = 1
 
   network_configuration {
-    subnets         = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     assign_public_ip = true
     security_groups  = [aws_security_group.strapi_sg.id]
   }
