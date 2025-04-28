@@ -1,7 +1,27 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+# Declare the VPC resource
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "strapi-vpc"
+  }
+}
+
+# Declare the CloudWatch Log Group resource
+resource "aws_cloudwatch_log_group" "strapi" {
+  name = "/ecs/strapi"
+}
+
 resource "aws_security_group" "strapi_sg" {
   name        = "strapi-sg"
   description = "Allow HTTP and ECS traffic"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main.id  # Reference the VPC here
 
   ingress {
     from_port   = 80
@@ -22,7 +42,7 @@ resource "aws_lb" "strapi" {
   name               = "strapi-lb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.strapi_sg.id]
+  security_groups    = [aws_security_group.strapi_sg.id]  # Reference the SG here
   subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
 
   tags = {
@@ -34,7 +54,7 @@ resource "aws_lb_target_group" "strapi" {
   name        = "strapi-tg"
   port        = 80
   protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main.id  # Reference the VPC here
   target_type = "ip"
 
   health_check {
@@ -83,7 +103,7 @@ resource "aws_ecs_task_definition" "strapi" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = aws_cloudwatch_log_group.strapi.name
+        awslogs-group         = aws_cloudwatch_log_group.strapi.name  # Reference the Log Group here
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "ecs"
       }
@@ -101,7 +121,7 @@ resource "aws_ecs_service" "strapi" {
   network_configuration {
     subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     assign_public_ip = true
-    security_groups  = [aws_security_group.strapi_sg.id]
+    security_groups  = [aws_security_group.strapi_sg.id]  # Reference the SG here
   }
 
   load_balancer {
