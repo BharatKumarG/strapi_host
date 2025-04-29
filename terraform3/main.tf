@@ -77,13 +77,6 @@ resource "aws_security_group" "strapi_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-  from_port   = 1337
-  to_port     = 1337
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -145,7 +138,7 @@ resource "aws_ecs_task_definition" "strapi" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-
+  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1" 
   container_definitions = jsonencode([
     {
       name      = "strapi"
