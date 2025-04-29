@@ -98,10 +98,11 @@ resource "aws_lb" "strapi" {
 }
 
 resource "aws_lb_target_group" "strapi" {
-  name     = "strapi-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  name        = "strapi-tg"
+  port        = 80
+  protocol    = "HTTP"
+  target_type = "ip"  # This is the critical fix
+  vpc_id      = aws_vpc.main.id
 
   health_check {
     path                = "/"
@@ -138,7 +139,7 @@ resource "aws_ecs_task_definition" "strapi" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1" 
+  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1"
   container_definitions = jsonencode([
     {
       name      = "strapi"
@@ -170,7 +171,7 @@ resource "aws_ecs_service" "strapi" {
   desired_count   = 1
 
   network_configuration {
-    subnets         = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     assign_public_ip = true
     security_groups  = [aws_security_group.strapi_sg.id]
   }
