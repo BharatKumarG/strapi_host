@@ -105,7 +105,7 @@ resource "aws_lb_target_group" "strapi" {
   target_type = "ip"
 
   health_check {
-    path                = "/health"  # Update if your Strapi app has a dedicated health check endpoint
+    path                = "/health"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -116,7 +116,7 @@ resource "aws_lb_target_group" "strapi" {
 
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.strapi.arn
-  port              = "80"
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
@@ -145,7 +145,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
         Principal = {
           Service = "ecs-tasks.amazonaws.com"
         }
-      },
+      }
     ]
   })
 }
@@ -170,12 +170,12 @@ resource "aws_ecs_task_definition" "strapi" {
     environment = [
       {
         name  = "PORT"
-        value = "80"  # Ensuring Strapi listens on port 80 inside the container
+        value = "80"
       }
     ]
     portMappings = [{
       containerPort = 80
-      hostPort      = 80
+      hostPort      = null
     }]
     logConfiguration = {
       logDriver = "awslogs"
@@ -193,6 +193,7 @@ resource "aws_ecs_service" "strapi" {
   cluster         = aws_ecs_cluster.strapi.id
   task_definition = aws_ecs_task_definition.strapi.arn
   desired_count   = 1
+  launch_type     = "FARGATE"
 
   load_balancer {
     target_group_arn = aws_lb_target_group.strapi.arn
@@ -201,10 +202,13 @@ resource "aws_ecs_service" "strapi" {
   }
 
   network_configuration {
-    subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    subnets         = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     security_groups = [aws_security_group.strapi_sg.id]
     assign_public_ip = true
   }
 
-  depends_on = [aws_lb_listener.front_end]
+  depends_on = [
+    aws_lb_listener.front_end,
+    aws_iam_role_policy_attachment.ecs_task_execution_role_policy
+  ]
 }
