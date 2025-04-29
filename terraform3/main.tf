@@ -98,14 +98,13 @@ resource "aws_lb" "strapi" {
 }
 
 resource "aws_lb_target_group" "strapi" {
-  name        = "strapi-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"
+  name     = "strapi-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
 
   health_check {
-    path                = "/health"
+    path                = "/"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -116,7 +115,7 @@ resource "aws_lb_target_group" "strapi" {
 
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.strapi.arn
-  port              = 80
+  port              = "80"
   protocol          = "HTTP"
 
   default_action {
@@ -133,46 +132,48 @@ resource "aws_cloudwatch_log_group" "strapi" {
   name = "/ecs/strapi"
 }
 
-# ECS task definition using the provided IAM role ARN
 resource "aws_ecs_task_definition" "strapi" {
   family                   = "strapi-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::118273046134:role/ecsTaskExecutionRole1"
 
-  container_definitions = jsonencode([{
-    name      = "strapi"
-    image     = "strapi/strapi"
-    essential = true
-    environment = [
-      {
-        name  = "PORT"
-        value = "80"
-      }
-    ]
-    portMappings = [{
-      containerPort = 80
-      hostPort      = null
-    }]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.strapi.name
-        awslogs-region        = "us-east-1"
-        awslogs-stream-prefix = "ecs"
+  container_definitions = jsonencode([
+    {
+      name      = "strapi"
+      image     = "strapi/strapi"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.strapi.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
       }
     }
-  }])
+  ])
 }
 
 resource "aws_ecs_service" "strapi" {
   name            = "strapi-service"
   cluster         = aws_ecs_cluster.strapi.id
   task_definition = aws_ecs_task_definition.strapi.arn
-  desired_count   = 1
   launch_type     = "FARGATE"
+  desired_count   = 1
+
+  network_configuration {
+    subnets         = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    assign_public_ip = true
+    security_groups  = [aws_security_group.strapi_sg.id]
+  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.strapi.arn
@@ -180,13 +181,9 @@ resource "aws_ecs_service" "strapi" {
     container_port   = 80
   }
 
-  network_configuration {
-    subnets         = [aws_subnet.public_a.id, aws_subnet.public_b.id]
-    security_groups = [aws_security_group.strapi_sg.id]
-    assign_public_ip = true
-  }
+  depends_on = [aws_lb_listener.front_end]
+}
 
-  depends_on = [
-    aws_lb_listener.front_end
-  ]
+output "strapi_lb_dns" {
+  value = aws_lb.strapi.dns_name
 }
